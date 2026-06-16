@@ -6,6 +6,14 @@ import requests
 
 from src.models.user import User
 
+_DEFAULT_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json",
+}
+
 
 class AccountClient:
     """Thin client for Automation Exercise account endpoints."""
@@ -13,6 +21,8 @@ class AccountClient:
     def __init__(self, base_url: str, timeout: float = 15.0) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self._session = requests.Session()
+        self._session.headers.update(_DEFAULT_HEADERS)
 
     def create_account(self, user: User) -> None:
         response = self._request("POST", "/api/createAccount", data=user.as_api_payload())
@@ -31,12 +41,26 @@ class AccountClient:
             raise AssertionError(f"Account was not deleted: {payload}")
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
-        response = requests.request(
-            method=method,
-            url=f"{self.base_url}{path}",
-            timeout=self.timeout,
-            **kwargs,
-        )
+        url = f"{self.base_url}{path}"
+        try:
+            response = self._session.request(
+                method=method,
+                url=url,
+                timeout=self.timeout,
+                allow_redirects=False,
+                **kwargs,
+            )
+        except requests.TooManyRedirects as exc:
+            raise AssertionError(
+                f"Too many redirects calling {url} — the site may be blocking "
+                "automated requests or is temporarily unavailable."
+            ) from exc
+        if response.is_redirect:
+            raise AssertionError(
+                f"Unexpected redirect ({response.status_code}) from {url} to "
+                f"{response.headers.get('location')} — the site may be blocking "
+                "automated requests or is temporarily unavailable."
+            )
         response.raise_for_status()
         return response
 
