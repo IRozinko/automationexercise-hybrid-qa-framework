@@ -20,14 +20,19 @@ def generated_user() -> User:
 @pytest.fixture()
 def registered_user(account_client: AccountClient, generated_user: User) -> User:
     account_client.create_account(generated_user)
-    yield generated_user
-    account_client.delete_account(generated_user.email, generated_user.password)
+    try:
+        yield generated_user
+    finally:
+        account_client.delete_account(generated_user.email, generated_user.password)
 
 
 @pytest.fixture(scope="session")
 def browser() -> Browser:
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=settings.headless)
+        browser = playwright.chromium.launch(
+            headless=settings.headless,
+            slow_mo=settings.slow_mo_ms,
+        )
         yield browser
         browser.close()
 
@@ -35,6 +40,7 @@ def browser() -> Browser:
 @pytest.fixture()
 def context(browser: Browser) -> BrowserContext:
     context = browser.new_context(base_url=settings.base_url)
+    context.set_default_timeout(settings.default_timeout_ms)
     yield context
     context.close()
 
