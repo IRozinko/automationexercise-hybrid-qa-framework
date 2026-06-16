@@ -1,3 +1,4 @@
+import allure
 from playwright.sync_api import Page
 
 from src.models.product import Product
@@ -17,17 +18,21 @@ class CheckoutFlow:
         self.checkout_page = CheckoutPage(page)
 
     def login(self, user: User) -> None:
-        self.login_page.open_login()
-        self.login_page.login(user.email, user.password)
+        with allure.step(f"Log in through UI as {user.email}"):
+            self.login_page.open_login()
+            self.login_page.login(user.email, user.password)
 
     def add_random_products_to_cart(self, count: int = 2) -> list[Product]:
-        self.products_page.open_products()
-        return self.products_page.select_random_products(count=count)
+        with allure.step(f"Select {count} random available products and add them to cart"):
+            self.products_page.open_products()
+            return self.products_page.select_random_products(count=count)
 
     def open_cart_and_verify(self, expected_products: list[Product]) -> None:
-        self.cart_page.open_cart()
-        self.cart_page.assert_products_match(expected_products)
+        with allure.step("Open cart and verify selected products"):
+            self.cart_page.open_cart()
+            self.cart_page.assert_products_match(expected_products)
 
     def proceed_to_checkout_and_read_delivery_address(self) -> dict[str, str]:
-        self.cart_page.proceed_to_checkout()
-        return self.checkout_page.delivery_address()
+        with allure.step("Proceed to checkout and parse delivery address"):
+            self.cart_page.proceed_to_checkout()
+            return self.checkout_page.delivery_address()

@@ -24,3 +24,15 @@ pip install -r requirements.txt
 playwright install chromium
 pytest
 ```
+
+## Allure Report
+
+Test runs write raw Allure results to `allure-results/`.
+
+```bash
+allure generate allure-results --clean -o allure-report
+allure open allure-report
+```
+
+On failure the framework attaches a full-page screenshot, the current page
+source, and a Playwright trace archive to the Allure result.
