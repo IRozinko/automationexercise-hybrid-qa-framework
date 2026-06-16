@@ -27,8 +27,9 @@ jobs:
           name: allure-results
           path: allure-results
       - name: Upload failure artifacts
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: failure-artifacts
           path: artifacts
+          if-no-files-found: ignore
